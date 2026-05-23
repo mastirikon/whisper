@@ -1,0 +1,1 @@
+ssh ubuntu-home 'cd ~/whisper && git pull && docker compose up -d --build'

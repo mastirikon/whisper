@@ -1,4 +1,4 @@
-# speech-to-text
+# whisper
 
 ## ВАЖНО для Claude
 
@@ -18,7 +18,7 @@
 
 - Сервер: **Lenovo ThinkCentre**, Ubuntu 24.04, `192.168.1.34`. SSH: `ssh ubuntu-home` (= `anton@192.168.1.34 -p 2294`).
 - Деплой через NPM (`https://npm.home.node34.pro`) на поддомен **`https://whisper.home.node34.pro`** (Let's Encrypt автоматом).
-- Compose-файл лежит на сервере в `~/speech-to-text/`. Заливка с Mac через `rsync ./ ubuntu-home:~/speech-to-text/`.
+- Compose-файл лежит на сервере в `~/whisper/`. Заливка с Mac через `rsync ./ ubuntu-home:~/whisper/` (или через `git pull` на сервере).
 - Сервисы подключены к external docker-сети **`proxy_network`** — там уже сидят NPM, fin-note, tasker. Никаких публичных портов наружу.
 
 ## Архитектура
@@ -61,7 +61,7 @@
 ```
 [NPM на Lenovo, proxy_network]
         │
-        │ proxy_pass http://speech-to-text-frontend:80
+        │ proxy_pass http://whisper-frontend:80
         ▼
 [frontend (nginx)]  ── app-net ──>  [backend (gunicorn)]
         ▲                                    │

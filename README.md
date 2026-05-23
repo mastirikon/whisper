@@ -1,4 +1,4 @@
-# speech-to-text
+# whisper
 
 Сервис распознавания речи на Flask + OpenAI Whisper. Раздаётся одним `docker compose up`:
 
@@ -41,7 +41,7 @@ rsync -avz --progress \
   --exclude '.venv' --exclude '.git' --exclude '__pycache__' \
   --exclude 'assets' --exclude 'env' --exclude '.DS_Store' \
   --exclude '.env' \
-  ./ ubuntu-home:~/speech-to-text/
+  ./ ubuntu-home:~/whisper/
 ```
 
 (`ubuntu-home` — твой SSH-алиас на `anton@192.168.1.34 -p 2294`.)
@@ -50,7 +50,7 @@ rsync -avz --progress \
 
 ```bash
 ssh ubuntu-home
-cd ~/speech-to-text
+cd ~/whisper
 cp .env.example .env
 docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_urlsafe(48))"
 # подставить вывод в .env как SECRET_KEY
@@ -73,7 +73,7 @@ docker compose logs -f
 **Details:**
 - Domain Names: `whisper.home.node34.pro`
 - Scheme: `http`
-- Forward Hostname / IP: `speech-to-text-frontend` (имя контейнера)
+- Forward Hostname / IP: `whisper-frontend` (имя контейнера)
 - Forward Port: `80`
 - Block Common Exploits: ✓
 - Websockets Support: ✓

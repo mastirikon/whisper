@@ -2,8 +2,8 @@ services:
   backend:
     build:
       context: ./backend
-    image: speech-to-text-backend
-    container_name: speech-to-text-backend
+    image: whisper-backend
+    container_name: whisper-backend
     restart: unless-stopped
     environment:
       FLASK_ENV: production
@@ -25,8 +25,8 @@ services:
   frontend:
     build:
       context: ./frontend
-    image: speech-to-text-frontend
-    container_name: speech-to-text-frontend
+    image: whisper-frontend
+    container_name: whisper-frontend
     restart: unless-stopped
     depends_on:
       - backend
