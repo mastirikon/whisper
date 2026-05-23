@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speech to Text</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">Whisper · OpenAI</div>
+      <h1>Speech&nbsp;to&nbsp;Text</h1>
+      <p class="subtitle">Загрузи аудио — получи распознанный текст. m4a · mp3 · wav · ogg · flac</p>
+    </header>
+
+    <section class="card upload-card">
+      <label id="dropzone" class="dropzone" for="file-input">
+        <input type="file" id="file-input" accept=".m4a,.mp3,.wav,.ogg,.flac" hidden />
+        <div class="dropzone-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12" />
+            <path d="m7 8 5-5 5 5" />
+            <path d="M5 21h14" />
+          </svg>
+        </div>
+        <p class="dropzone-text">Перетащи файл сюда или <span class="link">выбери на диске</span></p>
+        <p class="dropzone-hint">до 100&nbsp;МБ · форматы: m4a, mp3, wav, ogg, flac</p>
+      </label>
+
+      <div id="file-info" class="file-info hidden">
+        <div class="file-info-main">
+          <div class="file-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+            </svg>
+          </div>
+          <div class="file-meta">
+            <div class="file-name" id="file-name"></div>
+            <div class="file-size" id="file-size"></div>
+          </div>
+        </div>
+        <button id="remove-file" class="icon-btn" type="button" aria-label="Убрать файл">×</button>
+      </div>
+
+      <button id="submit-btn" class="primary-btn" type="button" disabled>
+        <span class="btn-label">Распознать</span>
+      </button>
+
+      <div id="status" class="status hidden"></div>
+    </section>
+
+    <section id="result" class="card result hidden">
+      <div class="result-header">
+        <h2>Результат</h2>
+        <div class="result-actions">
+          <button id="copy-btn" class="ghost-btn" type="button">Скопировать</button>
+          <button id="download-btn" class="ghost-btn" type="button">Скачать .txt</button>
+        </div>
+      </div>
+      <textarea id="result-text" spellcheck="false"></textarea>
+    </section>
+
+    <footer class="footer">
+      <span>powered by Whisper · Flask · nginx</span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

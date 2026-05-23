@@ -1,0 +1,45 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    image: speech-to-text-backend
+    container_name: speech-to-text-backend
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      WHISPER_MODEL: ${WHISPER_MODEL:-turbo}
+      MAX_CONTENT_LENGTH: ${MAX_CONTENT_LENGTH:-104857600}
+    volumes:
+      # Кэш моделей whisper: ~6 ГБ для turbo. Без него каждый рестарт = повторное скачивание.
+      - whisper-cache:/home/appuser/.cache/whisper
+    networks:
+      - app-net  # только для общения с frontend, наружу не торчит
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+    image: speech-to-text-frontend
+    container_name: speech-to-text-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - app-net        # чтобы проксировать /api/ в backend
+      - proxy_network  # чтобы NPM мог проксировать домен → этот контейнер по имени
+    # Никаких ports: — наружу только через NPM по proxy_network
+
+networks:
+  app-net:
+    driver: bridge
+  proxy_network:
+    external: true   # сеть NPM, уже существует на Lenovo
+
+volumes:
+  whisper-cache:

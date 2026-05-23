@@ -1,38 +1,35 @@
-# Игнорировать байткод
+# Python
 *.pyc
 *.pyo
-
+*.py[cod]
 **/__pycache__/
+*.egg-info/
 
-# Игнорировать каталог с файлами настройки
-**/config/
+# Virtualenv
+.venv/
+env/
+bin/
+lib/
+share/
+local/
+include/
 
-# Игнорировать каталог с данными и логами
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Локальные демо-аудио и временные файлы
+assets/
+upload/
+
+# Логи и данные
 **/data/
 **/logs/
-
-# Игнорировать каталог с исполнимыми файлами и модулями (если таковой имеется)
-**/bin/
-
-.idea/
-.idea/*
-
-lib/
-lib/*
-
-*.py[cod]
-*.pyc
-
-bin/
-bin/*
-
-share/
-share/*
-
-local/
-local/*
-
-include/
-include/*
-
-env/
