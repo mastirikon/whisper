@@ -2,6 +2,7 @@ const API_BASE = "/api";
 const TOKEN_KEY = "whisper.authToken";
 const MODE_KEY = "whisper.mode";
 const VAD_KEY = "whisper.vad";
+const LAST_RESULT_KEY = "whisper.lastResult";
 const ALLOWED_MODES = ["1", "3", "5"];
 
 const loginOverlay = document.getElementById("login-overlay");
@@ -35,6 +36,15 @@ const MODE_HINTS = {
 
 let selectedFile = null;
 let timerInterval = null;
+let activeTranscriptions = 0;
+
+// Защита от случайной перезагрузки во время активной транскрибации
+window.addEventListener("beforeunload", (e) => {
+  if (activeTranscriptions > 0) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
 
 // === Auth ===
 
@@ -327,23 +337,50 @@ submitBtn.addEventListener("click", async () => {
   resultSection.classList.add("hidden");
 
   const startTime = Date.now();
+  activeTranscriptions++;
   try {
     const res = await apiFetch(`/transcribe`, { method: "POST", body: fd });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || `Ошибка ${res.status}`);
     }
-    resultText.value = data.text || "";
+    const text = data.text || "";
+    resultText.value = text;
     resultSection.classList.remove("hidden");
     const elapsed = (Date.now() - startTime) / 1000;
     setStatus(`Готово за ${formatDuration(elapsed)}`, "success");
+    try {
+      localStorage.setItem(LAST_RESULT_KEY, JSON.stringify({
+        text,
+        fileName: selectedFile ? selectedFile.name : null,
+        savedAt: Date.now(),
+      }));
+    } catch {}
   } catch (err) {
     setStatus(err.message || "Ошибка запроса", "error");
   } finally {
+    activeTranscriptions--;
     stopTimer();
     submitBtn.disabled = !selectedFile;
   }
 });
+
+// Восстановление прошлого результата (например, после случайной перезагрузки)
+try {
+  const raw = localStorage.getItem(LAST_RESULT_KEY);
+  if (raw) {
+    const saved = JSON.parse(raw);
+    if (saved && typeof saved.text === "string" && saved.text.length > 0) {
+      resultText.value = saved.text;
+      resultSection.classList.remove("hidden");
+      const ago = saved.savedAt ? new Date(saved.savedAt).toLocaleString() : "";
+      const label = saved.fileName
+        ? `Прошлый результат · ${saved.fileName}${ago ? ` · ${ago}` : ""}`
+        : `Прошлый результат${ago ? ` · ${ago}` : ""}`;
+      setStatus(label, "success");
+    }
+  }
+} catch {}
 
 copyBtn.addEventListener("click", async () => {
   try {
