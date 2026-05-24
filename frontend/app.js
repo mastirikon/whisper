@@ -1,5 +1,8 @@
 const API_BASE = "/api";
 const TOKEN_KEY = "whisper.authToken";
+const MODE_KEY = "whisper.mode";
+const VAD_KEY = "whisper.vad";
+const ALLOWED_MODES = ["1", "3", "5"];
 
 const loginOverlay = document.getElementById("login-overlay");
 const loginForm = document.getElementById("login-form");
@@ -275,15 +278,37 @@ removeFileBtn.addEventListener("click", (e) => {
 
 function getSelectedMode() {
   const checked = document.querySelector('input[name="mode"]:checked');
-  return checked ? checked.value : "1";
+  return checked ? checked.value : "3";
+}
+
+function applyMode(value) {
+  if (!ALLOWED_MODES.includes(value)) return;
+  const input = document.querySelector(`input[name="mode"][value="${value}"]`);
+  if (input) input.checked = true;
+  const hint = document.getElementById("mode-hint");
+  if (hint) hint.textContent = MODE_HINTS[value] || "";
 }
 
 document.querySelectorAll('input[name="mode"]').forEach((input) => {
   input.addEventListener("change", () => {
-    const hint = document.getElementById("mode-hint");
-    if (hint) hint.textContent = MODE_HINTS[input.value] || "";
+    applyMode(input.value);
+    try { localStorage.setItem(MODE_KEY, input.value); } catch {}
   });
 });
+
+const vadToggle = document.getElementById("vad-toggle");
+vadToggle.addEventListener("change", () => {
+  try { localStorage.setItem(VAD_KEY, vadToggle.checked ? "true" : "false"); } catch {}
+});
+
+// Восстанавливаем сохранённые настройки. Если значения нет — оставляем дефолт из HTML.
+try {
+  const savedMode = localStorage.getItem(MODE_KEY);
+  if (savedMode && ALLOWED_MODES.includes(savedMode)) applyMode(savedMode);
+
+  const savedVad = localStorage.getItem(VAD_KEY);
+  if (savedVad === "true" || savedVad === "false") vadToggle.checked = savedVad === "true";
+} catch {}
 
 submitBtn.addEventListener("click", async () => {
   if (!selectedFile) return;
