@@ -1,4 +1,12 @@
 const API_BASE = "/api";
+const TOKEN_KEY = "whisper.authToken";
+
+const loginOverlay = document.getElementById("login-overlay");
+const loginForm = document.getElementById("login-form");
+const loginUsername = document.getElementById("login-username");
+const loginPassword = document.getElementById("login-password");
+const loginError = document.getElementById("login-error");
+const logoutBtn = document.getElementById("logout-btn");
 
 const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("file-input");
@@ -17,6 +25,94 @@ const ALLOWED = [".m4a", ".mp3", ".wav", ".ogg", ".flac"];
 const MAX_BYTES = 100 * 1024 * 1024;
 
 let selectedFile = null;
+
+// === Auth ===
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function setToken(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+function showLogin() {
+  loginOverlay.classList.remove("hidden");
+  loginOverlay.setAttribute("aria-hidden", "false");
+  logoutBtn.classList.add("hidden");
+  setTimeout(() => loginUsername.focus(), 50);
+}
+
+function hideLogin() {
+  loginOverlay.classList.add("hidden");
+  loginOverlay.setAttribute("aria-hidden", "true");
+  logoutBtn.classList.remove("hidden");
+  loginPassword.value = "";
+  loginError.classList.add("hidden");
+}
+
+function setLoginError(msg) {
+  loginError.textContent = msg;
+  loginError.classList.remove("hidden");
+}
+
+async function apiFetch(path, options = {}) {
+  const headers = new Headers(options.headers || {});
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  if (res.status === 401) {
+    // токен невалидный/протух — выкидываем и показываем форму логина
+    clearToken();
+    showLogin();
+    throw new Error("Сессия истекла, войдите заново");
+  }
+  return res;
+}
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  loginError.classList.add("hidden");
+  const username = loginUsername.value.trim();
+  const password = loginPassword.value;
+  if (!username || !password) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setLoginError(data.error || `Ошибка ${res.status}`);
+      return;
+    }
+    setToken(data.token);
+    hideLogin();
+  } catch (err) {
+    setLoginError(err.message || "Сеть недоступна");
+  }
+});
+
+logoutBtn.addEventListener("click", () => {
+  clearToken();
+  showLogin();
+});
+
+// При старте: если токена нет — сразу логин. Если есть — доверяем, при первом 401 перекинет.
+if (!getToken()) {
+  showLogin();
+} else {
+  logoutBtn.classList.remove("hidden");
+}
+
+// === File picking ===
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -117,10 +213,7 @@ submitBtn.addEventListener("click", async () => {
   resultSection.classList.add("hidden");
 
   try {
-    const res = await fetch(`${API_BASE}/transcribe`, {
-      method: "POST",
-      body: fd,
-    });
+    const res = await apiFetch(`/transcribe`, { method: "POST", body: fd });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || `Ошибка ${res.status}`);

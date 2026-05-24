@@ -8,7 +8,12 @@ services:
     environment:
       FLASK_ENV: production
       SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      UI_USERNAME: ${UI_USERNAME:?set UI_USERNAME in .env}
+      UI_PASSWORD: ${UI_PASSWORD:?set UI_PASSWORD in .env}
+      AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS:-2592000}
       WHISPER_MODEL: ${WHISPER_MODEL:-turbo}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
       MAX_CONTENT_LENGTH: ${MAX_CONTENT_LENGTH:-104857600}
     volumes:
       # Кэш моделей whisper: ~6 ГБ для turbo. Без него каждый рестарт = повторное скачивание.

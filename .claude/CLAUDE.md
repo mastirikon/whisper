@@ -75,9 +75,10 @@
 
 ## Эндпоинты
 
-- `GET /health` → `{"status": "ok"}`.
-- `POST /transcribe` — multipart с полем `audio`. Использует `tempfile.NamedTemporaryFile`. `whisper.load_model` кэшируется в памяти.
-- Со стороны фронта оба за префиксом `/api/`.
+- `GET /health` → `{"status": "ok"}`. Без auth.
+- `POST /login` — `{username, password}` → `{token, ttl_seconds}`. Подпись через `itsdangerous` (HMAC по `SECRET_KEY`). Учётки берутся из `UI_USERNAME` / `UI_PASSWORD` в env.
+- `POST /transcribe` — multipart с полем `audio`. Защищён `@require_auth` (заголовок `Authorization: Bearer <token>`). Использует `tempfile.NamedTemporaryFile`. Модель кэшируется в `_model_cache` в памяти.
+- Со стороны фронта все за префиксом `/api/`. Фронт держит токен в `localStorage.whisper.authToken`, показывает модалку логина при отсутствии или 401, есть кнопка «Выйти».
 
 ## NPM Advanced для Proxy Host (важно!)
 
@@ -98,6 +99,8 @@ proxy_request_buffering off;
 - gunicorn вместо dev-сервера Flask. 1 worker + 4 threads, timeout 600s.
 - python:3.12-slim вместо Alpine — у Whisper тяжёлые ML-зависимости, на Alpine собирается часами.
 - Whisper-модель кэшируется в памяти процесса (`_model_cache`) — первый запрос грузит, дальше переиспользует.
+- Инференс через `faster-whisper` (CTranslate2 + int8 квантизация), а не reference `openai-whisper`. Прирост ×2-4 на CPU без потери качества. Имя `turbo` маппится в `large-v3-turbo` внутри `whisper_service.py`.
+- UI и `/transcribe` защищены простым логин/паролем из env. Токены — подписанные через `itsdangerous` (использует `SECRET_KEY`), на фронте в `localStorage`. Самописная схема, не Flask-Login и не JWT-библиотеки.
 - Frontend nginx сам проксирует `/api/` на backend (а не NPM) — так NPM работает с одним upstream'ом, как у fin-note/tasker.
 
 ## Стиль работы

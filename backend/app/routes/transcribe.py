@@ -6,12 +6,14 @@ from flask import Blueprint, current_app, jsonify, request
 from flask.typing import ResponseReturnValue
 
 from ..services.whisper_service import speech_to_text
+from ..utils.auth import require_auth
 
 logger = logging.getLogger(__name__)
 transcribe_bp = Blueprint("transcribe", __name__)
 
 
 @transcribe_bp.post("/transcribe")
+@require_auth
 def transcribe() -> ResponseReturnValue:
     file = request.files.get("audio")
     if file is None or not file.filename:
