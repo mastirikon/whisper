@@ -16,6 +16,8 @@ class Config:
 
     WHISPER_MODEL: str = os.environ.get("WHISPER_MODEL", "turbo")
     WHISPER_CACHE: Path = Path(os.environ.get("WHISPER_CACHE", str(Path.home() / ".cache" / "whisper")))
+    WHISPER_DEVICE: str = os.environ.get("WHISPER_DEVICE", "cpu")
+    WHISPER_COMPUTE_TYPE: str = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
 
 
 class DevelopmentConfig(Config):

@@ -31,7 +31,13 @@ def transcribe() -> ResponseReturnValue:
         file.save(tmp.name)
         logger.info("saved temp file %s (%d bytes)", tmp.name, os.path.getsize(tmp.name))
         try:
-            result = speech_to_text(tmp.name, model=current_app.config["WHISPER_MODEL"])
+            result = speech_to_text(
+                tmp.name,
+                model=current_app.config["WHISPER_MODEL"],
+                device=current_app.config["WHISPER_DEVICE"],
+                compute_type=current_app.config["WHISPER_COMPUTE_TYPE"],
+                cache_dir=str(current_app.config["WHISPER_CACHE"]),
+            )
             return jsonify({"text": result.get("text", "")}), 200
         except Exception:
             logger.exception("transcription failed")
