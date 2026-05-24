@@ -17,7 +17,7 @@ services:
       WHISPER_BATCH_SIZE: ${WHISPER_BATCH_SIZE:-8}
       WHISPER_WARMUP: ${WHISPER_WARMUP:-true}
       WHISPER_DEFAULT_BEAM_SIZE: ${WHISPER_DEFAULT_BEAM_SIZE:-3}
-      WHISPER_DEFAULT_VAD: ${WHISPER_DEFAULT_VAD:-true}
+      WHISPER_DEFAULT_VAD: ${WHISPER_DEFAULT_VAD:-false}
       MAX_CONTENT_LENGTH: ${MAX_CONTENT_LENGTH:-104857600}
     volumes:
       # Кэш моделей whisper: ~6 ГБ для turbo. Без него каждый рестарт = повторное скачивание.
