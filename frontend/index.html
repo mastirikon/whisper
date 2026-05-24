@@ -69,6 +69,30 @@
         <button id="remove-file" class="icon-btn" type="button" aria-label="Убрать файл">×</button>
       </div>
 
+      <div class="settings">
+        <div class="settings-row">
+          <div class="settings-label">Режим</div>
+          <div class="segmented" role="radiogroup" aria-label="Качество распознавания">
+            <input type="radio" id="mode-fast" name="mode" value="1" checked />
+            <label for="mode-fast">Быстро</label>
+            <input type="radio" id="mode-balance" name="mode" value="3" />
+            <label for="mode-balance">Баланс</label>
+            <input type="radio" id="mode-quality" name="mode" value="5" />
+            <label for="mode-quality">Качество</label>
+          </div>
+        </div>
+        <p class="settings-hint" id="mode-hint">Быстрее всего · подходит для большинства записей</p>
+
+        <label class="toggle">
+          <input type="checkbox" id="vad-toggle" checked />
+          <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
+          <span class="toggle-text">
+            <span class="toggle-title">Пропускать тишину</span>
+            <span class="toggle-desc">Автоматически выкидывает паузы — обычно в 2-3 раза быстрее</span>
+          </span>
+        </label>
+      </div>
+
       <button id="submit-btn" class="primary-btn" type="button" disabled>
         <span class="btn-label">Распознать</span>
       </button>

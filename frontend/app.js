@@ -24,7 +24,14 @@ const downloadBtn = document.getElementById("download-btn");
 const ALLOWED = [".m4a", ".mp3", ".wav", ".ogg", ".flac"];
 const MAX_BYTES = 100 * 1024 * 1024;
 
+const MODE_HINTS = {
+  "1": "Быстрее всего · подходит для большинства записей",
+  "3": "Чуть точнее на сложных местах",
+  "5": "Максимум качества · медленнее, для нечёткой речи и акцентов",
+};
+
 let selectedFile = null;
+let timerInterval = null;
 
 // === Auth ===
 
@@ -120,7 +127,36 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function setStatus(text, kind) {
+function formatDuration(totalSeconds) {
+  const total = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+function probeAudioDuration(file) {
+  return new Promise((resolve) => {
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+    const url = URL.createObjectURL(file);
+    const cleanup = () => URL.revokeObjectURL(url);
+    audio.addEventListener("loadedmetadata", () => {
+      const d = audio.duration;
+      cleanup();
+      resolve(Number.isFinite(d) && d > 0 ? d : null);
+    });
+    audio.addEventListener("error", () => {
+      cleanup();
+      resolve(null);
+    });
+    audio.src = url;
+  });
+}
+
+function setStatus(text, kind, opts = {}) {
   statusEl.className = "status " + kind;
   statusEl.classList.remove("hidden");
   statusEl.innerHTML = "";
@@ -132,11 +168,38 @@ function setStatus(text, kind) {
   const t = document.createElement("span");
   t.textContent = text;
   statusEl.appendChild(t);
+  if (opts.timer) {
+    const timer = document.createElement("span");
+    timer.className = "timer";
+    timer.id = "status-timer";
+    timer.textContent = "00:00";
+    statusEl.appendChild(timer);
+  }
 }
 
 function clearStatus() {
   statusEl.classList.add("hidden");
   statusEl.textContent = "";
+}
+
+function startTimer() {
+  stopTimer();
+  const start = Date.now();
+  timerInterval = setInterval(() => {
+    const timerEl = document.getElementById("status-timer");
+    if (!timerEl) {
+      stopTimer();
+      return;
+    }
+    timerEl.textContent = formatDuration((Date.now() - start) / 1000);
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
 }
 
 function validateFile(file) {
@@ -150,7 +213,7 @@ function validateFile(file) {
   return null;
 }
 
-function selectFile(file) {
+async function selectFile(file) {
   const err = validateFile(file);
   if (err) {
     setStatus(err, "error");
@@ -162,6 +225,14 @@ function selectFile(file) {
   fileInfo.classList.remove("hidden");
   submitBtn.disabled = false;
   clearStatus();
+
+  // Длительность узнаём асинхронно — не блокируем UI, не критично если не получится
+  const duration = await probeAudioDuration(file);
+  // Возможно пользователь успел выбрать другой файл — проверяем что это всё ещё тот же
+  if (selectedFile !== file) return;
+  if (duration !== null) {
+    fileSizeEl.textContent = `${formatBytes(file.size)} · ${formatDuration(duration)}`;
+  }
 }
 
 function clearFile() {
@@ -202,16 +273,35 @@ removeFileBtn.addEventListener("click", (e) => {
   clearStatus();
 });
 
+function getSelectedMode() {
+  const checked = document.querySelector('input[name="mode"]:checked');
+  return checked ? checked.value : "1";
+}
+
+document.querySelectorAll('input[name="mode"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    const hint = document.getElementById("mode-hint");
+    if (hint) hint.textContent = MODE_HINTS[input.value] || "";
+  });
+});
+
 submitBtn.addEventListener("click", async () => {
   if (!selectedFile) return;
 
+  const beamSize = getSelectedMode();
+  const vad = document.getElementById("vad-toggle").checked;
+
   const fd = new FormData();
   fd.append("audio", selectedFile);
+  fd.append("beam_size", beamSize);
+  fd.append("vad", vad ? "true" : "false");
 
   submitBtn.disabled = true;
-  setStatus("Распознаём… это может занять время", "loading");
+  setStatus("Распознаём…", "loading", { timer: true });
+  startTimer();
   resultSection.classList.add("hidden");
 
+  const startTime = Date.now();
   try {
     const res = await apiFetch(`/transcribe`, { method: "POST", body: fd });
     const data = await res.json().catch(() => ({}));
@@ -220,11 +310,12 @@ submitBtn.addEventListener("click", async () => {
     }
     resultText.value = data.text || "";
     resultSection.classList.remove("hidden");
-    setStatus("Готово", "success");
-    setTimeout(clearStatus, 1800);
+    const elapsed = (Date.now() - startTime) / 1000;
+    setStatus(`Готово за ${formatDuration(elapsed)}`, "success");
   } catch (err) {
     setStatus(err.message || "Ошибка запроса", "error");
   } finally {
+    stopTimer();
     submitBtn.disabled = !selectedFile;
   }
 });

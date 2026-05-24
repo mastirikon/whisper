@@ -101,6 +101,10 @@ proxy_request_buffering off;
 - Whisper-модель кэшируется в памяти процесса (`_model_cache`) — первый запрос грузит, дальше переиспользует.
 - Инференс через `faster-whisper` (CTranslate2 + int8 квантизация), а не reference `openai-whisper`. Прирост ×2-4 на CPU без потери качества. Имя `turbo` маппится в `large-v3-turbo` внутри `whisper_service.py`.
 - UI и `/transcribe` защищены простым логин/паролем из env. Токены — подписанные через `itsdangerous` (использует `SECRET_KEY`), на фронте в `localStorage`. Самописная схема, не Flask-Login и не JWT-библиотеки.
+- При `vad=true` (дефолт) используется `BatchedInferencePipeline` — VAD + батч-обработка сегментов. При `vad=false` fallback на обычный `WhisperModel.transcribe`.
+- На старте в `create_app()` греется модель (`WHISPER_WARMUP=true` дефолт) — первый юзерский запрос не платит ~3-5 сек загрузки.
+- На фронте сегмент-контрол режима (1/3/5 beam_size = быстро/баланс/качество), тоггл VAD, длительность аудио в `file-info` (через `<audio>` metadata), таймер транскрибации в статусе.
+- `WHISPER_ALLOWED_BEAM_SIZES = (1, 3, 5)` — whitelist на бэке, фронт не может попросить произвольное значение.
 - Frontend nginx сам проксирует `/api/` на backend (а не NPM) — так NPM работает с одним upstream'ом, как у fin-note/tasker.
 
 ## Стиль работы

@@ -23,6 +23,12 @@ class Config:
     WHISPER_CACHE: Path = Path(os.environ.get("WHISPER_CACHE", str(Path.home() / ".cache" / "whisper")))
     WHISPER_DEVICE: str = os.environ.get("WHISPER_DEVICE", "cpu")
     WHISPER_COMPUTE_TYPE: str = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
+    WHISPER_BATCH_SIZE: int = int(os.environ.get("WHISPER_BATCH_SIZE", 8))
+    WHISPER_WARMUP: bool = _env_bool("WHISPER_WARMUP", True)
+    # whitelist допустимых beam_size, чтобы фронт не мог попросить, например, 999
+    WHISPER_ALLOWED_BEAM_SIZES: tuple[int, ...] = (1, 3, 5)
+    WHISPER_DEFAULT_BEAM_SIZE: int = int(os.environ.get("WHISPER_DEFAULT_BEAM_SIZE", 1))
+    WHISPER_DEFAULT_VAD: bool = _env_bool("WHISPER_DEFAULT_VAD", True)
 
 
 class DevelopmentConfig(Config):

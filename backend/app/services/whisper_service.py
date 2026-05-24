@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from faster_whisper import WhisperModel
+from faster_whisper import BatchedInferencePipeline, WhisperModel
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +19,22 @@ def _resolve_model_name(name: str) -> str:
 
 
 def _get_model(name: str, device: str, compute_type: str, cache_dir: str | None) -> WhisperModel:
-    key = (name, device, compute_type)
+    resolved = _resolve_model_name(name)
+    key = (resolved, device, compute_type)
     if key not in _model_cache:
-        logger.info("loading whisper model: %s (device=%s, compute_type=%s)", name, device, compute_type)
+        logger.info("loading whisper model: %s (device=%s, compute_type=%s)", resolved, device, compute_type)
         _model_cache[key] = WhisperModel(
-            name,
+            resolved,
             device=device,
             compute_type=compute_type,
             download_root=cache_dir,
         )
     return _model_cache[key]
+
+
+def warmup(name: str, device: str, compute_type: str, cache_dir: str | None) -> None:
+    """Загрузить модель в память при старте, чтобы первый юзерский запрос не ждал."""
+    _get_model(name, device, compute_type, cache_dir)
 
 
 def speech_to_text(
@@ -37,14 +43,34 @@ def speech_to_text(
     device: str = "cpu",
     compute_type: str = "int8",
     cache_dir: str | None = None,
+    beam_size: int = 1,
+    vad: bool = True,
+    batch_size: int = 8,
 ) -> dict[str, Any]:
-    resolved = _resolve_model_name(model)
-    logger.info("transcribing %s with model %s", file_path, resolved)
-    whisper_model = _get_model(resolved, device, compute_type, cache_dir)
-    segments, info = whisper_model.transcribe(str(file_path))
-    # segments — ленивый генератор; материализуем и склеиваем
-    parts = [seg.text for seg in segments]
-    text = "".join(parts).strip()
+    whisper_model = _get_model(model, device, compute_type, cache_dir)
+
+    logger.info(
+        "transcribing %s (beam_size=%d, vad=%s, batched=%s)",
+        file_path, beam_size, vad, vad,
+    )
+
+    # BatchedInferencePipeline требует VAD (он внутри сам режет аудио по VAD-сегментам и обрабатывает их батчами).
+    # Без VAD батчинг невозможен → fallback на обычный transcribe.
+    if vad:
+        pipeline = BatchedInferencePipeline(model=whisper_model)
+        segments, info = pipeline.transcribe(
+            str(file_path),
+            beam_size=beam_size,
+            batch_size=batch_size,
+        )
+    else:
+        segments, info = whisper_model.transcribe(
+            str(file_path),
+            beam_size=beam_size,
+            vad_filter=False,
+        )
+
+    text = "".join(seg.text for seg in segments).strip()
     return {
         "text": text,
         "language": info.language,
