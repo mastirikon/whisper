@@ -33,3 +33,6 @@ upload/
 # Логи и данные
 **/data/
 **/logs/
+
+# Dev docker
+docker-compose.override.yml
