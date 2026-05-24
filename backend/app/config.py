@@ -27,7 +27,7 @@ class Config:
     WHISPER_WARMUP: bool = _env_bool("WHISPER_WARMUP", True)
     # whitelist допустимых beam_size, чтобы фронт не мог попросить, например, 999
     WHISPER_ALLOWED_BEAM_SIZES: tuple[int, ...] = (1, 3, 5)
-    WHISPER_DEFAULT_BEAM_SIZE: int = int(os.environ.get("WHISPER_DEFAULT_BEAM_SIZE", 1))
+    WHISPER_DEFAULT_BEAM_SIZE: int = int(os.environ.get("WHISPER_DEFAULT_BEAM_SIZE", 3))
     WHISPER_DEFAULT_VAD: bool = _env_bool("WHISPER_DEFAULT_VAD", True)
 
 
